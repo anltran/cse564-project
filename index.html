@@ -7,8 +7,112 @@
 </head>
 <body>
 
-    <h1>Welcome to the CSE 564 Project</h1>
-    <p>This is a simple HTML page for the CSE 564 project.</p>
+<h1>Welcome to the CSE 564 Project</h1>
     
+<div id="map"></div>
+
+<script>
+
+    function generateMap() {
+        // plot dimensions and margins
+        const margin = {top: 30, right: 20, bottom: 40, left: 50};
+        const width = 640 - margin.left - margin.right;
+        const height = 640 - margin.top - margin.bottom;
+
+        // create empty plot and append to container div
+        const svg = d3.select("#map")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // fetch csv data
+        d3.csv('http://localhost:3000/data').then(function(data) {
+            
+            // create x-axis
+            const x = d3.scaleLinear()
+                .domain([-74.3, -73.7])
+                .range([0, width]);
+
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            // create y-axis
+            const y = d3.scaleLinear()
+                .range([height, 0])
+                .domain([40.5, 40.9]);
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // color scale
+            const color = d3.scaleOrdinal()
+                .domain(['MANHATTAN','QUEENS','BROOKLYN','BRONX','STATEN ISLAND'])
+                .range(d3.schemeCategory10);
+
+            // generate map points
+            svg.append("g")
+                .selectAll("dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                    .attr("cx", d => x(d['Longitude']))
+                    .attr("cy", d => y(d['Latitude']))
+                    .attr("r", 1.5)
+                    .style("fill", d => color(d['BORO_NM']));
+
+            // text label for x axis
+            svg.append("text")
+                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 3) + ")")
+                .style("text-anchor", "middle")
+                .text("Longitude");
+
+            // text label for y axis
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Latitude");
+
+            // text label for plot
+            svg.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 0 - (margin.top / 2) + 2)
+                .attr("text-anchor", "middle")
+                .style("text-decoration", "underline")  
+                .text("Map of NYC Crime Data 2019-Present");
+
+
+            // legend
+            const legend = svg.append("g").attr("transform", "translate(20, 20)");
+
+            const legendItems = legend.selectAll(".legend-item")
+                .data(color.domain())
+                .enter()
+                .append("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
+            legendItems.append("rect")
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", color);
+
+            legendItems.append("text")
+                .attr("x", 24)
+                .attr("y", 9)
+                .attr("dy", "0.35em")
+                .text(d => d);
+        })
+    }
+
+    generateMap();
+
+</script>
+
 </body>
 </html>
