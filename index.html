@@ -4,6 +4,20 @@
     <meta charset="utf-8">
     <title>CSE 564 Project</title>
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+
+        .flex-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #map, #bar {
+            margin: 10px;
+        }
+
+    </style>
 </head>
 <body>
 
@@ -11,7 +25,11 @@
 
 <label for="dropdown">Select a map variable:</label>
 <select id="dropdown" oninput="dropdownEvent()"></select>
-<div id="map"></div>
+
+<div class="flex-container">
+    <div id="map"></div>
+    <div id="bar"></div>
+</div>
 
 <script>
 
@@ -136,13 +154,111 @@
         const input = dropdown.value;
 
         // clear plots
-        const container = document.getElementById("map");
-        container.innerHTML = '';
+        const map = document.getElementById("map");
+        map.innerHTML = '';
+        const bar = document.getElementById("bar");
+        bar.innerHTML = '';
 
-        // generate new map with selected variable
+        // generate new plots with selected variable
         generateMap(input);
+        generateBarChart(input);
     }
 
 </script>
+
+<script>
+
+    bar_chart_variables = [
+        'BORO_NM',
+        'LAW_CAT_CD'
+    ];
+
+    function generateBarChart(input) {
+        // plot dimensions and margins
+        const margin = {top: 30, right: 20, bottom: 70, left: 60};
+        const width = 640 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        // create empty plot and append to container div
+        const svg = d3.select("#bar")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        // fetch csv data
+        d3.csv('http://localhost:3000/data').then(function(data) {
+
+            // count the frequency of each categorical value
+            const freq = {};
+            data.forEach(function(row) {
+                freq[row[input]] = (freq[row[input]] || 0) + 1
+            })
+
+            // convert the frequency dictionary to the right format
+            const mapped = [];
+            for (const [key, value] of Object.entries(freq)) {
+                mapped.push({
+                    var: key,
+                    value: value
+                })
+            }
+
+            // create x-axis
+            const x = d3.scaleBand()
+                .domain(mapped.map(d => d.var))
+                .range([0, width])
+                .padding(0.2);
+
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x)) 
+                .selectAll("text")
+                    .attr("transform", "translate(-10,0)rotate(-45)")
+                    .style("text-anchor", "end");
+
+            // create y-axis
+            const y = d3.scaleLinear()
+                .range([height, 0])
+                .domain([0, d3.max(mapped, d => d.value)]);
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // generate bar chart
+            svg.selectAll("bar")
+                .data(mapped)
+                .enter()
+                .append("rect")
+                    .attr("x", d => x(d.var))
+                    .attr("y", d => y(d.value))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => height - y(d.value))
+                    .attr("fill", "steelblue")
+
+            // text label for y axis
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Frequency");
+
+            // text label for plot
+            svg.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 0 - (margin.top / 2) + 2)
+                .attr("text-anchor", "middle")
+                .style("text-decoration", "underline")  
+                .text("Bar Chart of " + input);
+        })
+    }
+
+    generateBarChart('BORO_NM'); // default variable
+    
+</script>
+
 </body>
 </html>
