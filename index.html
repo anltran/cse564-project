@@ -8,12 +8,14 @@
 <body>
 
 <h1>Welcome to the CSE 564 Project</h1>
-    
+
+<label for="dropdown">Select a map variable:</label>
+<select id="dropdown" oninput="dropdownEvent()"></select>
 <div id="map"></div>
 
 <script>
 
-    function generateMap() {
+    function generateMap(input) {
         // plot dimensions and margins
         const margin = {top: 30, right: 20, bottom: 40, left: 50};
         const width = 640 - margin.left - margin.right;
@@ -48,9 +50,8 @@
                 .call(d3.axisLeft(y));
 
             // color scale
-            const color = d3.scaleOrdinal()
-                .domain(['MANHATTAN','QUEENS','BROOKLYN','BRONX','STATEN ISLAND'])
-                .range(d3.schemeCategory10);
+            const color = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(data.map(d => d[input]));
 
             // generate map points
             svg.append("g")
@@ -61,7 +62,7 @@
                     .attr("cx", d => x(d['Longitude']))
                     .attr("cy", d => y(d['Latitude']))
                     .attr("r", 1.5)
-                    .style("fill", d => color(d['BORO_NM']));
+                    .style("fill", d => color(d[input]));
 
             // text label for x axis
             svg.append("text")
@@ -110,9 +111,38 @@
         })
     }
 
-    generateMap();
+    generateMap('BORO_NM'); // default variable
 
 </script>
 
+<script>
+    const dropdown_variables = [
+        'BORO_NM',
+        'LAW_CAT_CD'
+    ];
+
+    // populate dropdown options
+    const dropdown = document.getElementById('dropdown');
+    dropdown_variables.forEach(element => {
+        const option = document.createElement('option');
+        option.value = element;
+        option.text = element;
+        dropdown.appendChild(option);
+    });
+
+    // dropdown event handler
+    function dropdownEvent() {
+        const dropdown = document.getElementById("dropdown");
+        const input = dropdown.value;
+
+        // clear plots
+        const container = document.getElementById("map");
+        container.innerHTML = '';
+
+        // generate new map with selected variable
+        generateMap(input);
+    }
+
+</script>
 </body>
 </html>
