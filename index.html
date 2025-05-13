@@ -17,11 +17,17 @@
             margin: 10px;
         }
 
+        .selected {
+            opacity: 1 !important;
+            stroke: black;
+            stroke-width: 1px;
+        }
+
     </style>
 </head>
 <body>
 
-<h1>Welcome to the CSE 564 Project</h1>
+<h1>NYC Crime Visualization</h1>
 
 <label for="dropdown">Select a map variable:</label>
 <select id="dropdown" oninput="dropdownEvent()"></select>
@@ -72,7 +78,7 @@
                 .domain(data.map(d => d[input]));
 
             // generate map points
-            svg.append("g")
+            const circle = svg.append("g")
                 .selectAll("dot")
                 .data(data)
                 .enter()
@@ -105,7 +111,6 @@
                 .style("text-decoration", "underline")  
                 .text("Map of NYC Crime Data 2019-Present");
 
-
             // legend
             const legend = svg.append("g").attr("transform", "translate(20, 20)");
 
@@ -126,6 +131,34 @@
                 .attr("y", 9)
                 .attr("dy", "0.35em")
                 .text(d => d);
+
+            // Add brushing
+            svg.call(d3.brush() // Add the brush feature using the d3.brush function
+                .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+                .on("end", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
+            );
+
+            // Function that is triggered when brushing is performed
+            function updateChart(event) {
+                extent = event.selection
+                circle.classed("selected", function(d){ return isBrushed(extent, x(d.Longitude), y(d.Latitude) ) } )
+
+                const selected = d3.selectAll(".selected");
+                const selectedData = selected.data(); // Get the data of the selected elements
+                const bar = document.getElementById("bar");
+                bar.innerHTML = '';
+                generateBarChart(input, selectedData); // Call the bar chart function with the selected data
+            }
+
+            // A function that return TRUE or FALSE according if a dot is in the selection or not
+            function isBrushed(brush_coords, cx, cy) {
+                var x0 = brush_coords[0][0],
+                    x1 = brush_coords[1][0],
+                    y0 = brush_coords[0][1],
+                    y1 = brush_coords[1][1];
+                return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
+            }
+        
         })
     }
 
@@ -173,7 +206,7 @@
         'LAW_CAT_CD'
     ];
 
-    function generateBarChart(input) {
+    function generateBarChart(input, data = null) {
         // plot dimensions and margins
         const margin = {top: 30, right: 20, bottom: 70, left: 60};
         const width = 640 - margin.left - margin.right;
@@ -187,6 +220,72 @@
             .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+        if (data != null) {
+            // count the frequency of each categorical value
+            const freq = {};
+            data.forEach(function(row) {
+                freq[row[input]] = (freq[row[input]] || 0) + 1
+            })
+
+            // convert the frequency dictionary to the right format
+            const mapped = [];
+            for (const [key, value] of Object.entries(freq)) {
+                mapped.push({
+                    var: key,
+                    value: value
+                })
+            }
+
+            // create x-axis
+            const x = d3.scaleBand()
+                .domain(mapped.map(d => d.var))
+                .range([0, width])
+                .padding(0.2);
+
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x)) 
+                .selectAll("text")
+                    .attr("transform", "translate(-10,0)rotate(-45)")
+                    .style("text-anchor", "end");
+
+            // create y-axis
+            const y = d3.scaleLinear()
+                .range([height, 0])
+                .domain([0, d3.max(mapped, d => d.value)]);
+
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // generate bar chart
+            svg.selectAll("bar")
+                .data(mapped)
+                .enter()
+                .append("rect")
+                    .attr("x", d => x(d.var))
+                    .attr("y", d => y(d.value))
+                    .attr("width", x.bandwidth())
+                    .attr("height", d => height - y(d.value))
+                    .attr("fill", "steelblue")
+
+            // text label for y axis
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Frequency");
+
+            // text label for plot
+            svg.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 0 - (margin.top / 2) + 2)
+                .attr("text-anchor", "middle")
+                .style("text-decoration", "underline")  
+                .text("Bar Chart of " + input);
+        }
+        else {
         // fetch csv data
         d3.csv('http://localhost:3000/data').then(function(data) {
 
@@ -254,10 +353,10 @@
                 .style("text-decoration", "underline")  
                 .text("Bar Chart of " + input);
         })
-    }
+    } }
 
     generateBarChart('BORO_NM'); // default variable
-    
+
 </script>
 
 </body>
