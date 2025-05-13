@@ -10,6 +10,10 @@ app.get('/data', (req, res) => {
     res.sendFile('data.csv', {root: __dirname })
 });
 
+app.get('/index.css', (req, res) => {
+    res.sendFile('index.css', {root: __dirname })
+});
+
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
