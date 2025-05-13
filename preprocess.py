@@ -87,4 +87,4 @@ df.rename(columns={'CMPLNT_FR_DT': 'date'}, inplace=True)
 print(df.value_counts('year'))
 
 # Export the cleaned DataFrame to a CSV file
-df.to_csv('./data.csv', index=False)
+df.to_csv('data.csv', index=False)
