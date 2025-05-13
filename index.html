@@ -8,14 +8,18 @@
 </head>
 <body>
 
-<h1>NYC Crime Visualization</h1>
+<div class="main-header">
+    <h1>NYC Crime Visualization</h1>
+    <div class="header-dropdowns">
+        <div class="dropdown-group">
+            <label for="dropdown">Clustering variable</label>
+            <select id="dropdown" oninput="dropdownEvent()"></select>
+        </div>
+        <button onclick="resetEvent()">Reset All</button>
+    </div>
+</div>
 
-<button onclick="resetEvent()">Reset All</button>
-<br>
-<label for="dropdown">Select a clustering variable:</label>
-<select id="dropdown" oninput="dropdownEvent()"></select>
-
-<div class="flex-container">
+<div class="graphs">
     <div id="map"></div>
     <div id="bar"></div>
     <div id="area"></div>
