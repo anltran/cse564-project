@@ -17,6 +17,8 @@ df = df[df.BORO_NM.isin(['MANHATTAN','QUEENS','BROOKLYN','BRONX','STATEN ISLAND'
 
 # Convert the 'date' column to datetime objects
 df['CMPLNT_FR_DT'] = pd.to_datetime(df['CMPLNT_FR_DT'], errors='coerce')
+# df['CMPLNT_FR_TM'] = pd.to_datetime(df['CMPLNT_FR_TM'], format='%H:%M:%S', errors='coerce').dt.time
+# df['timestamp'] = df.apply(lambda row: pd.Timestamp.combine(row['CMPLNT_FR_DT'], row['CMPLNT_FR_TM']), axis=1)
 df = df.dropna()
 
 # Extract year, month, day, day of week, and hour from the date and time columns
@@ -85,6 +87,8 @@ df['location'] = df.apply(assign_location, axis=1)
 df.rename(columns={'CMPLNT_FR_DT': 'date'}, inplace=True)
 
 print(df.value_counts('year'))
+
+# df.drop(columns=['CMPLNT_FR_DT', 'CMPLNT_FR_TM', 'OFNS_DESC', 'PREM_TYP_DESC'], inplace=True)
 
 # Export the cleaned DataFrame to a CSV file
 df.to_csv('data.csv', index=False)
