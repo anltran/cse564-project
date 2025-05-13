@@ -3,8 +3,10 @@ import pandas as pd
 features = ['BORO_NM', 'CMPLNT_FR_DT', 'CMPLNT_FR_TM', 'LAW_CAT_CD', 'OFNS_DESC', 'PREM_TYP_DESC', 'Latitude', 'Longitude']
 
 # Load the dataset
-df = pd.read_csv('nypd-complaints.csv', usecols=features)
+df = pd.read_csv('nypd-complaints-2021-2024.csv', usecols=features)
 df = df.dropna()
+
+df = df.sample(n=80000, replace=False, random_state=42)
 
 # Identify rows with any zero and drop them
 rows_with_zeros = (df == 0).any(axis=1)
@@ -79,6 +81,10 @@ def assign_location(row):
         return 'Other'
     
 df['location'] = df.apply(assign_location, axis=1)
+
+df.rename(columns={'CMPLNT_FR_DT': 'date'}, inplace=True)
+
+print(df.value_counts('year'))
 
 # Export the cleaned DataFrame to a CSV file
 df.to_csv('./data.csv', index=False)

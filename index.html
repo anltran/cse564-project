@@ -29,13 +29,31 @@
 
 <h1>NYC Crime Visualization</h1>
 
-<label for="dropdown">Select a map variable:</label>
+<button onclick="resetEvent()">Reset All</button>
+<br>
+<label for="dropdown">Select a clustering variable:</label>
 <select id="dropdown" oninput="dropdownEvent()"></select>
 
 <div class="flex-container">
     <div id="map"></div>
     <div id="bar"></div>
+    <div id="area"></div>
 </div>
+
+<script>
+    function resetEvent() {
+        const map = document.getElementById("map");
+        map.innerHTML = '';
+        const bar = document.getElementById("bar");
+        bar.innerHTML = '';
+        const dropdown = document.getElementById("dropdown");
+        dropdown.value = 'BORO_NM';
+
+        // generate new plots with default variable
+        generateMap('BORO_NM');
+        generateBarChart('BORO_NM');
+    }
+</script>
 
 <script>
 
@@ -356,6 +374,85 @@
     } }
 
     generateBarChart('BORO_NM'); // default variable
+
+</script>
+
+<script>
+
+function generateAreaChart(input) {
+    // plot dimensions and margins
+    const margin = {top: 10, right: 30, bottom: 30, left: 60};
+    const width = 640 - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
+
+    // create empty plot and append to container div
+    const svg = d3.select("#area")
+        .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // fetch csv data
+    d3.csv('http://localhost:3000/data').then(function(data) {
+        const parseDate = d3.timeParse("%Y-%m-%d");
+        const formatYear = d3.timeFormat("%Y");
+
+        data.forEach(d => {
+            d.date = parseDate(d.date);
+            d.year = formatYear(d.date);
+        });
+
+        const allCategories = Array.from(new Set(data.map(d => d[input])));
+        const allYears = Array.from(new Set(data.map(d => d.year))).sort();
+
+        const grouped = allYears.map(year => {
+            const entries = data.filter(d => d.year === year);
+            const freq = Object.fromEntries(allCategories.map(c => [c, 0]));
+            entries.forEach(d => {
+                freq[d[input]]++;
+            });
+            return { year: d3.timeParse("%Y")(year), ...freq };
+        });
+
+        const stack = d3.stack().keys(allCategories);
+        const series = stack(grouped);
+
+        const x = d3.scaleTime()
+            .domain(d3.extent(grouped, d => d.year))
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(series[series.length - 1], d => d[1])])
+            .nice()
+            .range([height, 0]);
+
+        const color = d3.scaleOrdinal()
+            .domain(allCategories)
+            .range(d3.schemeCategory10);
+        
+        const area = d3.area()
+            .x(d => x(d.data.year))
+            .y0(d => y(d[0]))
+            .y1(d => y(d[1]));
+
+        svg.selectAll("path")
+        .data(series)
+        .join("path")
+            .attr("fill", d => color(d.key))
+            .attr("class", "area")
+            .attr("d", area);
+
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .call(d3.axisLeft(y));
+    });
+}
+
+generateAreaChart('BORO_NM'); // default variable
 
 </script>
 
