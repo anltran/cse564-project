@@ -9,7 +9,7 @@
 <body>
 
 <div class="main-header">
-    <h1>NYC Crime Visualization</h1>
+    <h1>NYC Crime: 2021 to 2024</h1>
     <div class="header-dropdowns">
         <div class="dropdown-group">
             <label for="dropdown">Clustering variable</label>
@@ -19,10 +19,12 @@
     </div>
 </div>
 
-<div class="graphs">
+<div class="main-content">
     <div id="map"></div>
-    <div id="bar"></div>
-    <div id="area"></div>
+    <div class="subgraphs">
+        <div id="bar"></div>
+        <div id="area"></div>
+    </div>
 </div>
 
 <script>
@@ -47,15 +49,16 @@
 
     function generateMap(input) {
         // plot dimensions and margins
-        const margin = {top: 30, right: 20, bottom: 40, left: 50};
+        const margin = {top: 20, right: 10, bottom: 15, left: 0};
         const width = 640 - margin.left - margin.right;
         const height = 640 - margin.top - margin.bottom;
 
         // create empty plot and append to container div
         const svg = d3.select("#map")
             .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
+                .attr("id", "dot-area")
+                .attr("height", "100%")
+                .attr("viewbox", `0 0 ${width + margin.left + margin.right} ${width + margin.top + margin.bottom}`)
             .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -67,17 +70,10 @@
                 .domain([-74.3, -73.7])
                 .range([0, width]);
 
-            svg.append("g")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x));
-
             // create y-axis
             const y = d3.scaleLinear()
                 .range([height, 0])
                 .domain([40.5, 40.9]);
-
-            svg.append("g")
-                .call(d3.axisLeft(y));
 
             // color scale
             const color = d3.scaleOrdinal(d3.schemeCategory10)
@@ -89,33 +85,11 @@
                 .data(data)
                 .enter()
                 .append("circle")
-                    .attr("cx", d => x(d['Longitude']))
-                    .attr("cy", d => y(d['Latitude']))
+                    .attr("cx", d => x(d['Longitude']) * (100/640) + "%")
+                    .attr("cy", d => y(d['Latitude']) * (100/640) + "%")
                     .attr("r", 1.5)
-                    .style("fill", d => color(d[input]));
-
-            // text label for x axis
-            svg.append("text")
-                .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 3) + ")")
-                .style("text-anchor", "middle")
-                .text("Longitude");
-
-            // text label for y axis
-            svg.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 0 - margin.left)
-                .attr("x", 0 - (height / 2))
-                .attr("dy", "1em")
-                .style("text-anchor", "middle")
-                .text("Latitude");
-
-            // text label for plot
-            svg.append("text")
-                .attr("x", (width / 2))             
-                .attr("y", 0 - (margin.top / 2) + 2)
-                .attr("text-anchor", "middle")
-                .style("text-decoration", "underline")  
-                .text("Map of NYC Crime Data 2021-2024");
+                    .style("fill", d => color(d[input]))
+                    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");;
 
             // legend
             const legend = svg.append("g").attr("transform", "translate(20, 20)");
@@ -140,19 +114,22 @@
 
             // Add brushing
             svg.call(d3.brush() // Add the brush feature using the d3.brush function
-                .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
+                // .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
                 .on("end", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
             );
 
             // Function that is triggered when brushing is performed
             function updateChart(event) {
                 extent = event.selection
+                const dotArea = document.getElementById("dot-area");
+                const widthRatio = dotArea.clientWidth/640;
+                const heightRatio = dotArea.clientHeight/640;
                 if (!extent) {
                     circle.classed("selected", false);
                     var selectedData = null;
                 }
                 else {
-                    circle.classed("selected", function(d){ return isBrushed(extent, x(d.Longitude), y(d.Latitude) ) } )
+                    circle.classed("selected", function(d){ return isBrushed(extent, x(d.Longitude), y(d.Latitude), widthRatio, heightRatio) } )
                     const selected = d3.selectAll(".selected");
                     var selectedData = selected.data(); // Get the data of the selected elements
                     if (selectedData.length == 0) {
@@ -168,11 +145,13 @@
             }
 
             // A function that return TRUE or FALSE according if a dot is in the selection or not
-            function isBrushed(brush_coords, cx, cy) {
-                var x0 = brush_coords[0][0],
-                    x1 = brush_coords[1][0],
-                    y0 = brush_coords[0][1],
-                    y1 = brush_coords[1][1];
+            function isBrushed(brush_coords, cx, cy, widthRatio, heightRatio) {
+                var x0 = brush_coords[0][0] - margin.left,
+                    x1 = brush_coords[1][0] - margin.left,
+                    y0 = brush_coords[0][1] - margin.top,
+                    y1 = brush_coords[1][1] - margin.top;
+                var cx = cx * widthRatio;
+                var cy = cy * heightRatio;
                 return x0 <= cx && cx <= x1 && y0 <= cy && cy <= y1;    // This return TRUE or FALSE depending on if the points is in the selected area
             }
         

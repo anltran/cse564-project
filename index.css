@@ -1,6 +1,14 @@
+div {
+    overflow: hidden;
+}
+
 body {
     font-family: system-ui;
     margin: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .main-header {
@@ -10,6 +18,7 @@ body {
     justify-content: space-between;
     border-bottom: 1px solid gray;
     padding: 10px 20px;
+    flex-shrink: 0;
 }
 
 h1 {
@@ -42,15 +51,36 @@ h1 {
     padding: 5px 10px;
 }
 
-.graphs {
+.main-content {
     display: flex;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
+    flex-grow: 1;
 }
 
-#map, #bar {
-    margin: 10px;
+.subgraphs {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-left: 1px solid black;
+    padding: 10px;
+    height: 100%;
+    box-sizing: border-box;
+    flex-grow: 1;
+}
+
+#map {
+    height: 100%;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#dot-area {
+    aspect-ratio: 1;
 }
 
 .selected {
