@@ -77,6 +77,7 @@ h1 {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 #dot-area {
@@ -87,4 +88,13 @@ h1 {
     opacity: 1 !important;
     stroke: black;
     stroke-width: 1px;
+}
+
+.instructions {
+    color: gray;
+    position: absolute;
+    bottom: 5px;
+    right: 20px;
+    text-align: right;
+    user-select: none;
 }
