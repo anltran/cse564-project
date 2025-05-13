@@ -53,7 +53,7 @@ def assign_offense(row):
     else:
         return 'Other'
     
-df['offense'] = df.apply(assign_offense, axis=1)
+df['Offense Type'] = df.apply(assign_offense, axis=1)
 
 # Assign location categories based on PREM_TYP_DESC
 street = ['STREET', 'PARKING LOT/GARAGE (PUBLIC)', 'PARKING LOT/GARAGE (PRIVATE)', 'HIGHWAY/PARKWAY']
@@ -82,9 +82,9 @@ def assign_location(row):
     else:
         return 'Other'
     
-df['location'] = df.apply(assign_location, axis=1)
+df['Location'] = df.apply(assign_location, axis=1)
 
-df.rename(columns={'CMPLNT_FR_DT': 'date'}, inplace=True)
+df.rename(columns={'CMPLNT_FR_DT': 'Date', 'BORO_NM': 'Borough Name', 'LAW_CAT_CD': 'Level of Offense'}, inplace=True)
 
 print(df.value_counts('year'))
 

@@ -37,14 +37,14 @@
         const bar = document.getElementById("bar");
         bar.innerHTML = '';
         const dropdown = document.getElementById("dropdown");
-        dropdown.value = 'BORO_NM';
+        dropdown.value = 'Borough Name';
         const area = document.getElementById("area");
         area.innerHTML = '';
 
         // generate new plots with default variable
-        generateMap('BORO_NM');
-        generateBarChart('BORO_NM');
-        generateAreaChart('BORO_NM');
+        generateMap('Borough Name');
+        generateBarChart('Borough Name');
+        generateAreaChart('Borough Name');
     }
 </script>
 
@@ -166,16 +166,16 @@
         }
     }
 
-    generateMap('BORO_NM'); // default variable
+    generateMap('Borough Name'); // default variable
 
 </script>
 
 <script>
     const dropdown_variables = [
-        'BORO_NM',
-        'LAW_CAT_CD',
-        'offense',
-        'location'
+        'Borough Name',
+        'Level of Offense',
+        'Offense Type',
+        'Location'
     ];
 
     // populate dropdown options
@@ -327,7 +327,7 @@
         }
     }
 
-    generateBarChart('BORO_NM'); // default variable
+    generateBarChart('Borough Name'); // default variable
 
 </script>
 
@@ -450,7 +450,7 @@ function generateAreaChart(input, data = null) {
     }
 }
 
-generateAreaChart('BORO_NM'); // default variable
+generateAreaChart('Borough Name'); // default variable
 
 </script>
 
