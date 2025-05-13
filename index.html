@@ -162,10 +162,18 @@
             // Function that is triggered when brushing is performed
             function updateChart(event) {
                 extent = event.selection
-                circle.classed("selected", function(d){ return isBrushed(extent, x(d.Longitude), y(d.Latitude) ) } )
-
-                const selected = d3.selectAll(".selected");
-                const selectedData = selected.data(); // Get the data of the selected elements
+                if (!extent) {
+                    circle.classed("selected", false);
+                    var selectedData = null;
+                }
+                else {
+                    circle.classed("selected", function(d){ return isBrushed(extent, x(d.Longitude), y(d.Latitude) ) } )
+                    const selected = d3.selectAll(".selected");
+                    var selectedData = selected.data(); // Get the data of the selected elements
+                    if (selectedData.length == 0) {
+                        selectedData = null;
+                    }
+                }
                 const bar = document.getElementById("bar");
                 bar.innerHTML = '';
                 generateBarChart(input, selectedData); // Call the bar chart function with the selected data
@@ -193,7 +201,9 @@
 <script>
     const dropdown_variables = [
         'BORO_NM',
-        'LAW_CAT_CD'
+        'LAW_CAT_CD',
+        'offense',
+        'location'
     ];
 
     // populate dropdown options
@@ -228,14 +238,9 @@
 
 <script>
 
-    bar_chart_variables = [
-        'BORO_NM',
-        'LAW_CAT_CD'
-    ];
-
     function generateBarChart(input, data = null) {
         // plot dimensions and margins
-        const margin = {top: 30, right: 20, bottom: 70, left: 60};
+        const margin = {top: 30, right: 20, bottom: 120, left: 60};
         const width = 640 - margin.left - margin.right;
         const height = 400 - margin.top - margin.bottom;
 
@@ -408,9 +413,6 @@ function generateAreaChart(input, data = null) {
         const allCategories = Array.from(new Set(data.map(d => d[input])));
         const allYears = Array.from(new Set(data.map(d => d.year))).sort();
 
-        console.log(allCategories);
-        console.log(allYears);
-
         const grouped = allYears.map(year => {
             const entries = data.filter(d => d.year === year);
             const freq = Object.fromEntries(allCategories.map(c => [c, 0]));
@@ -422,8 +424,6 @@ function generateAreaChart(input, data = null) {
 
         const stack = d3.stack().keys(allCategories);
         const series = stack(grouped);
-
-        console.log(grouped);
 
         const x = d3.scaleTime()
             .domain(d3.extent(grouped, d => d.year))
