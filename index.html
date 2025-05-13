@@ -223,7 +223,7 @@
             .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        if (data != null) {
+        function draw(data) {
             // count the frequency of each categorical value
             const freq = {};
             data.forEach(function(row) {
@@ -317,104 +317,14 @@
                 .style("text-decoration", "underline")  
                 .text("Bar Chart of " + input);
         }
-        else {
-        // fetch csv data
-        d3.csv('http://localhost:3000/data').then(function(data) {
 
-            // count the frequency of each categorical value
-            const freq = {};
-            data.forEach(function(row) {
-                freq[row[input]] = (freq[row[input]] || 0) + 1
-            })
-
-            // convert the frequency dictionary to the right format
-            const mapped = [];
-            for (const [key, value] of Object.entries(freq)) {
-                mapped.push({
-                    var: key,
-                    value: value
-                })
-            }
-
-            // create x-axis
-            const x = d3.scaleBand()
-                .domain(mapped.map(d => d.var))
-                .range([0, width])
-                .padding(0.2);
-
-            svg.append("g")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x)) 
-                .selectAll("text")
-                    .attr("transform", "translate(-10,0)rotate(-45)")
-                    .style("text-anchor", "end");
-
-            // create y-axis
-            const y = d3.scaleLinear()
-                .range([height, 0])
-                .domain([0, d3.max(mapped, d => d.value)]);
-
-            svg.append("g")
-                .call(d3.axisLeft(y));
-
-            // generate bar chart
-            const bars = svg.selectAll("bar")
-                .data(mapped)
-                .enter()
-                .append("rect")
-                    .attr("x", d => x(d.var))
-                    .attr("y", d => y(d.value))
-                    .attr("width", x.bandwidth())
-                    .attr("height", d => height - y(d.value))
-                    .attr("fill", "steelblue")
-                .on("mouseover", function(event, d) {
-                    if (!d3.select(this).classed("selected")) {
-                        d3.select(this).style("fill", "orange");
-                    }
-                })
-                .on("mouseout", function(event, d) {
-                    if (!d3.select(this).classed("selected")) {
-                        d3.select(this).style("fill", "steelblue");
-                    }
-                })
-                .on("click", function(event, d) {
-                    const selection = d3.select(this);
-                    if (selection.classed("selected")) {
-                        selection.classed("selected", false).style("fill", "steelblue");
-                    } else {
-                        selection.classed("selected", true).style("fill", "green");
-                    }
-                    const selectedBars = svg.selectAll("rect.selected");
-                    const variables = selectedBars.data().map(d => d.var);
-
-                    filterData = data.filter(d => variables.includes(d[input]))
-
-                    const map = document.getElementById("map");
-                    map.innerHTML = '';
-                    const area = document.getElementById("area");
-                    area.innerHTML = '';
-                    generateMap(input, filterData);
-                    generateAreaChart(input, filterData);
-                });
-
-            // text label for y axis
-            svg.append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 0 - margin.left)
-                .attr("x", 0 - (height / 2))
-                .attr("dy", "1em")
-                .style("text-anchor", "middle")
-                .text("Frequency");
-
-            // text label for plot
-            svg.append("text")
-                .attr("x", (width / 2))             
-                .attr("y", 0 - (margin.top / 2) + 2)
-                .attr("text-anchor", "middle")
-                .style("text-decoration", "underline")  
-                .text("Bar Chart of " + input);
-        })
-    } }
+        if (data != null) {
+            draw(data)
+        } else {
+            // fetch csv data
+            d3.csv('http://localhost:3000/data').then(draw)
+        }
+    }
 
     generateBarChart('BORO_NM'); // default variable
 
@@ -436,7 +346,7 @@ function generateAreaChart(input, data = null) {
         .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    if (data != null) {
+    function draw(data) {
         const formatYear = d3.timeFormat("%Y");
 
         const allCategories = Array.from(new Set(data.map(d => d[input])));
@@ -530,103 +440,13 @@ function generateAreaChart(input, data = null) {
             .attr("dy", "0.35em")
             .text(d => d);
     }
-    else {
-    // fetch csv data
-    d3.csv('http://localhost:3000/data').then(function(data) {
-        const formatYear = d3.timeFormat("%Y");
 
-        const allCategories = Array.from(new Set(data.map(d => d[input])));
-        const allYears = Array.from(new Set(data.map(d => d.year))).sort();
-
-        const grouped = allYears.map(year => {
-            const entries = data.filter(d => d.year === year);
-            const freq = Object.fromEntries(allCategories.map(c => [c, 0]));
-            entries.forEach(d => {
-                freq[d[input]]++;
-            });
-            return { year: d3.timeParse("%Y")(year), ...freq };
-        });
-
-        const stack = d3.stack().keys(allCategories);
-        const series = stack(grouped);
-
-        const x = d3.scaleTime()
-            .domain(d3.extent(grouped, d => d.year))
-            .range([0, width]);
-
-        const y = d3.scaleLinear()
-            .domain([0, d3.max(series[series.length - 1], d => d[1])])
-            .nice()
-            .range([height, 0]);
-
-        const color = d3.scaleOrdinal()
-            .domain(allCategories)
-            .range(d3.schemeCategory10);
-        
-        const area = d3.area()
-            .x(d => x(d.data.year))
-            .y0(d => y(d[0]))
-            .y1(d => y(d[1]));
-
-        svg.selectAll("path")
-            .data(series)
-            .join("path")
-                .attr("fill", d => color(d.key))
-                .attr("class", "area")
-                .attr("d", area);
-
-        svg.append("g")
-            .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x));
-
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
-        // text label for x axis
-        svg.append("text")
-            .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 3) + ")")
-            .style("text-anchor", "middle")
-            .text("Time");
-
-        // text label for y axis
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left)
-            .attr("x", 0 - (height / 2))
-            .attr("dy", "1em")
-            .style("text-anchor", "middle")
-            .text("Frequency");
-
-        // text label for plot
-        svg.append("text")
-            .attr("x", (width / 2))             
-            .attr("y", 0 - (margin.top / 2) + 2)
-            .attr("text-anchor", "middle")
-            .style("text-decoration", "underline")  
-            .text("Area Chart of " + input);
-
-        // legend for plot
-        const legend = svg.append("g").attr("transform", "translate(20, 20)");
-
-        const legendItems = legend.selectAll(".legend-item")
-            .data(color.domain())
-            .enter()
-            .append("g")
-            .attr("class", "legend-item")
-            .attr("transform", (d, i) => `translate(0, ${i * 20})`);
-
-        legendItems.append("rect")
-            .attr("width", 18)
-            .attr("height", 18)
-            .attr("fill", color);
-
-        legendItems.append("text")
-            .attr("x", 24)
-            .attr("y", 9)
-            .attr("dy", "0.35em")
-            .text(d => d);
-    });
-}
+    if (data != null) {
+        draw(data)
+    } else {
+        // fetch csv data
+        d3.csv('http://localhost:3000/data').then(draw);
+    }
 }
 
 generateAreaChart('BORO_NM'); // default variable
