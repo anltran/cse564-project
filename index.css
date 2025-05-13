@@ -71,6 +71,15 @@ h1 {
     flex-grow: 1;
 }
 
+#map-and-instructions {
+    height: 100%;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
 #map {
     height: 100%;
     flex-grow: 1;
