@@ -291,14 +291,19 @@
                     const selectedBars = svg.selectAll("rect.selected");
                     const variables = selectedBars.data().map(d => d.var);
 
-                    filterData = data.filter(d => variables.includes(d[input]))
-
                     const map = document.getElementById("map");
                     map.innerHTML = '';
                     const area = document.getElementById("area");
                     area.innerHTML = '';
-                    generateMap(input, filterData);
-                    generateAreaChart(input, filterData);
+
+                    if (variables.length == 0) {
+                        generateMap(input);
+                        generateAreaChart(input);
+                    }
+                    else {
+                        generateMap(input, data.filter(d => variables.includes(d[input])));
+                        generateAreaChart(input, data.filter(d => variables.includes(d[input])));
+                    }
                 });
 
             // text label for y axis
