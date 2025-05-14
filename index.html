@@ -19,6 +19,10 @@
             <label for="dropdown-time-interval">Time series interval</label>
             <select id="dropdown-time-interval" oninput="dropdownEvent()"></select>
         </div>
+        <div class="dropdown-group">
+            <label for="dropdown-time-grouping">Time grouping</label>
+            <select id="dropdown-time-grouping" oninput="dropdownEvent()"></select>
+        </div>
         <button onclick="resetEvent()">Reset All</button>
     </div>
 </div>
@@ -45,6 +49,11 @@
         const dropdownTimeInterval = document.getElementById("dropdown-time-interval");
         return dropdownTimeInterval.value;
     }
+
+    function getTimeGrouping() {
+        const dropdownTimeGrouping = document.getElementById("dropdown-time-grouping");
+        return dropdownTimeGrouping.value;
+    }
 </script>
 
 <script>
@@ -57,13 +66,18 @@
         dropdownCluster.value = 'Borough Name';
         const dropdownTimeInterval = document.getElementById("dropdown-time-interval");
         dropdownTimeInterval.value = 'Month';
+        const dropdownTimeGrouping = document.getElementById("dropdown-time-grouping");
+        dropdownTimeGrouping.value = 'Year';
         const area = document.getElementById("area");
         area.innerHTML = '';
+        const stackBar = document.getElementById("stack-bar");
+        stackBar.innerHTML = '';
 
         // generate new plots with default variable
         generateMap();
         generateBarChart();
         generateAreaChart();
+        generateStackBarChart();
     }
 </script>
 
@@ -165,6 +179,9 @@
                 const area = document.getElementById("area");
                 area.innerHTML = '';
                 generateAreaChart(selectedData); // Call the area chart function with the selected data
+                const stackBar = document.getElementById("stack-bar");
+                stackBar.innerHTML = '';
+                generateStackBarChart(selectedData); // Call the area chart function with the selected data
             }
 
             // A function that return TRUE or FALSE according if a dot is in the selection or not
@@ -202,6 +219,13 @@
         'Day'
     ];
 
+    const dropdownTimeGroupingValues = [
+        'Year',
+        'Month',
+        'Day',
+        'Hour'
+    ];
+
     // populate dropdown options
     const dropdownCluster = document.getElementById('dropdown-cluster');
     dropdownClusterValues.forEach(element => {
@@ -219,6 +243,15 @@
         dropdownTimeInterval.appendChild(option);
     });
     dropdownTimeInterval.value = 'Month';
+    
+    const dropdownTimeGrouing = document.getElementById('dropdown-time-grouping');
+    dropdownTimeGroupingValues.forEach(element => {
+        const option = document.createElement('option');
+        option.value = element;
+        option.text = element;
+        dropdownTimeGrouing.appendChild(option);
+    });
+    dropdownTimeGrouing.value = 'Month';
 
     // dropdown event handler
     function dropdownEvent() {
@@ -229,11 +262,14 @@
         bar.innerHTML = '';
         const area = document.getElementById("area");
         area.innerHTML = '';
+        const stackBar = document.getElementById("stack-bar");
+        stackBar.innerHTML = '';
 
         // generate new plots with selected variables
         generateMap();
         generateBarChart();
         generateAreaChart();
+        generateStackBarChart();
     }
 </script>
 
@@ -243,9 +279,9 @@
         const input = getCluster();
 
         // plot dimensions and margins
-        const margin = {top: 30, right: 20, bottom: 120, left: 60};
+        const margin = {top: 30, right: 20, bottom: 20, left: 60};
         const width = 640 - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
+        const height = 320 - margin.top - margin.bottom;
 
         // create empty plot and append to container div
         const svg = d3.select("#bar")
@@ -280,9 +316,7 @@
             svg.append("g")
                 .attr("transform", "translate(0," + height + ")")
                 .call(d3.axisBottom(x)) 
-                .selectAll("text")
-                    .attr("transform", "translate(-10,0)rotate(-45)")
-                    .style("text-anchor", "end");
+                .selectAll("text");
 
             // create y-axis
             const y = d3.scaleLinear()
@@ -330,10 +364,13 @@
                     if (variables.length == 0) {
                         generateMap();
                         generateAreaChart();
+                        generateStackBarChart();
                     }
                     else {
-                        generateMap(data.filter(d => variables.includes(d[input])));
-                        generateAreaChart(data.filter(d => variables.includes(d[input])));
+                        const filteredData = data.filter(d => variables.includes(d[input]));
+                        generateMap(filteredData);
+                        generateAreaChart(filteredData);
+                        generateStackBarChart(filteredData);
                     }
                 });
 
@@ -352,7 +389,7 @@
                 .attr("y", 0 - (margin.top / 2) + 2)
                 .attr("text-anchor", "middle")
                 .style("text-decoration", "underline")  
-                .text("Bar Chart of " + input);
+                .text("Number of incidents by " + input);
         }
 
         if (data != null) {
@@ -371,9 +408,9 @@ function generateAreaChart(data = null) {
     const timeInterval = getTimeInterval();
     
     // plot dimensions and margins
-    const margin = {top: 20, right: 10, bottom: 40, left: 60};
+    const margin = {top: 30, right: 10, bottom: 40, left: 60};
     const width = 640 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const height = 320 - margin.top - margin.bottom;
 
     // create empty plot and append to container div
     const svg = d3.select("#area")
@@ -470,7 +507,7 @@ function generateAreaChart(data = null) {
             .attr("y", 0 - (margin.top / 2) + 2)
             .attr("text-anchor", "middle")
             .style("text-decoration", "underline")  
-            .text("Area Chart of " + input);
+            .text("Incidents over time by " + input);
 
         // legend for plot
         const legend = svg.append("g").attr("transform", "translate(20, 20)");
@@ -504,17 +541,30 @@ function generateAreaChart(data = null) {
 </script>
 
 <script>
-    // Call resetEvent for the first time to initialize everything
-    resetEvent();
-</script>
 
-<script>
+    function getTimeUnit() {
+        const timeGrouping = getTimeGrouping();
+        switch (timeGrouping) {
+            case "Hour":
+                return "hour";
+            case "Day":
+                return "day_of_week";
+            case "Month":
+                return "month";
+            case "Year":
+                return "year";
+        }
+    }
 
-    function generateStackBarChart(input, data = null, timeUnit = "year") {
+    function generateStackBarChart(data = null) {
+        const input = getCluster();
+        const timeGrouping = getTimeGrouping();
+        const timeUnit = getTimeUnit();
+
         // plot dimensions and margins
-        const margin = {top: 10, right: 30, bottom: 20, left: 50};
+        const margin = {top: 30, right: 10, bottom: 20, left: 60};
         const width = 640 - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
+        const height = 320 - margin.top - margin.bottom;
 
         // create empty plot and append to container div
         const svg = d3.select("#stack-bar")
@@ -550,88 +600,80 @@ function generateAreaChart(data = null) {
             const stack = d3.stack().keys(allCategories);
             const series = stack(data);
 
-        // Step 5: Scales
-        const x = d3.scaleBand()
-        .domain(data.map(d => d.date))
-        .range([0, width])
-        .padding(0.1);
+            // Step 5: Scales
+            const x = d3.scaleBand()
+                .domain(data.map(d => d.date))
+                .range([0, width])
+                .padding(0.1);
 
-        const y = d3.scaleLinear()
-        .domain([0, d3.max(series, s => d3.max(s, d => d[1]))])
-        .nice()
-        .range([height, 0]);
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(series, s => d3.max(s, d => d[1]))])
+                .nice()
+                .range([height, 0]);
 
-        const color = d3.scaleOrdinal()
-        .domain(allCategories)
-        .range(d3.schemeCategory10);
+            const color = d3.scaleOrdinal()
+                .domain(allCategories)
+                .range(d3.schemeCategory10);
 
-        // Step 6: Draw bars
-        svg.selectAll("g.layer")
-        .data(series)
-        .join("g")
-            .attr("fill", d => color(d.key))
-        .selectAll("rect")
-        .data(d => d)
-        .join("rect")
-            .attr("x", d => x(d.data.date))
-            .attr("y", d => y(d[1]))
-            .attr("height", d => y(d[0]) - y(d[1]))
-            .attr("width", x.bandwidth());
+            // Step 6: Draw bars
+            svg.selectAll("g.layer")
+                .data(series)
+                .join("g")
+                    .attr("fill", d => color(d.key))
+                .selectAll("rect")
+                .data(d => d)
+                .join("rect")
+                    .attr("x", d => x(d.data.date))
+                    .attr("y", d => y(d[1]))
+                    .attr("height", d => y(d[0]) - y(d[1]))
+                    .attr("width", x.bandwidth());
 
-        // Step 7: Axes
-        svg.append("g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
-        .selectAll("text")
-            .attr("transform", "rotate(-40)")
-            .style("text-anchor", "end");
+            // Step 7: Axes
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
+                .selectAll("text");
 
-        svg.append("g")
-        .call(d3.axisLeft(y));
+            svg.append("g")
+                .call(d3.axisLeft(y));
 
-        // text label for x axis
-        svg.append("text")
-            .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 3) + ")")
-            .style("text-anchor", "middle")
-            .text("Time");
+            // text label for y axis
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - margin.left)
+                .attr("x", 0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .text("Frequency");
 
-        // text label for y axis
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0 - margin.left)
-            .attr("x", 0 - (height / 2))
-            .attr("dy", "1em")
-            .style("text-anchor", "middle")
-            .text("Frequency");
+            // text label for plot
+            svg.append("text")
+                .attr("x", (width / 2))             
+                .attr("y", 0 - (margin.top / 2) + 2)
+                .attr("text-anchor", "middle")
+                .style("text-decoration", "underline")  
+                .text(`Incidents per ${timeGrouping} by ${input}`);
 
-        // text label for plot
-        svg.append("text")
-            .attr("x", (width / 2))             
-            .attr("y", 0 - (margin.top / 2) + 2)
-            .attr("text-anchor", "middle")
-            .style("text-decoration", "underline")  
-            .text("Area Chart of " + input);
+            // legend for plot
+            const legend = svg.append("g").attr("transform", "translate(20, 20)");
 
-        // legend for plot
-        const legend = svg.append("g").attr("transform", "translate(20, 20)");
+            const legendItems = legend.selectAll(".legend-item")
+                .data(color.domain())
+                .enter()
+                .append("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(0, ${i * 20})`);
 
-        const legendItems = legend.selectAll(".legend-item")
-            .data(color.domain())
-            .enter()
-            .append("g")
-            .attr("class", "legend-item")
-            .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+            legendItems.append("rect")
+                .attr("width", 18)
+                .attr("height", 18)
+                .attr("fill", color);
 
-        legendItems.append("rect")
-            .attr("width", 18)
-            .attr("height", 18)
-            .attr("fill", color);
-
-        legendItems.append("text")
-            .attr("x", 24)
-            .attr("y", 9)
-            .attr("dy", "0.35em")
-            .text(d => d);
+            legendItems.append("text")
+                .attr("x", 24)
+                .attr("y", 9)
+                .attr("dy", "0.35em")
+                .text(d => d);
         }
 
         if (data != null) {
@@ -641,8 +683,12 @@ function generateAreaChart(data = null) {
             d3.csv('http://localhost:3000/data').then(draw)
         }
     }
-    generateStackBarChart('Borough Name', null, 'month'); // default variable
 
+</script>
+
+<script>
+    // Call resetEvent for the first time to initialize everything
+    resetEvent();
 </script>
 
 </body>
