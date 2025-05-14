@@ -13,15 +13,15 @@
     <div class="header-dropdowns">
         <div class="dropdown-group">
             <label for="dropdown-cluster">Clustering variable</label>
-            <select id="dropdown-cluster" oninput="dropdownEvent()"></select>
+            <select id="dropdown-cluster" oninput="dropdownClusterEvent()"></select>
         </div>
         <div class="dropdown-group">
             <label for="dropdown-time-interval">Time series interval</label>
-            <select id="dropdown-time-interval" oninput="dropdownEvent()"></select>
+            <select id="dropdown-time-interval" oninput="dropdownTimeIntervalEvent()"></select>
         </div>
         <div class="dropdown-group">
             <label for="dropdown-time-grouping">Time grouping</label>
-            <select id="dropdown-time-grouping" oninput="dropdownEvent()"></select>
+            <select id="dropdown-time-grouping" oninput="dropdownTimeGroupingEvent()"></select>
         </div>
         <button onclick="resetEvent()">Reset All</button>
     </div>
@@ -253,8 +253,8 @@
     });
     dropdownTimeGrouing.value = 'Month';
 
-    // dropdown event handler
-    function dropdownEvent() {
+    // dropdown event handlers
+    function dropdownClusterEvent() {
         // clear plots
         const map = document.getElementById("map");
         map.innerHTML = '';
@@ -269,6 +269,18 @@
         generateMap();
         generateBarChart();
         generateAreaChart();
+        generateStackBarChart();
+    }
+    
+    function dropdownTimeIntervalEvent() {
+        const area = document.getElementById("area");
+        area.innerHTML = '';
+        generateAreaChart();
+    }
+    
+    function dropdownTimeGroupingEvent() {
+        const stackBar = document.getElementById("stack-bar");
+        stackBar.innerHTML = '';
         generateStackBarChart();
     }
 </script>
