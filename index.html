@@ -31,6 +31,7 @@
     <div class="subgraphs">
         <div id="bar"></div>
         <div id="area"></div>
+        <div id="stack-bar"></div>
     </div>
 </div>
 
@@ -505,6 +506,143 @@ function generateAreaChart(data = null) {
 <script>
     // Call resetEvent for the first time to initialize everything
     resetEvent();
+</script>
+
+<script>
+
+    function generateStackBarChart(input, data = null, timeUnit = "year") {
+        // plot dimensions and margins
+        const margin = {top: 10, right: 30, bottom: 20, left: 50};
+        const width = 640 - margin.left - margin.right;
+        const height = 400 - margin.top - margin.bottom;
+
+        // create empty plot and append to container div
+        const svg = d3.select("#stack-bar")
+            .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        function draw(rawData) {
+            const timeParse = d3.timeParse("%Y-%m-%d");
+            rawData.forEach(d => d.date = timeParse(d.date));
+
+            const nested = d3.rollup(
+                rawData,
+                v => v.length,
+                d => d[timeUnit],
+                d => d[input]
+            );
+            
+            const allCategories = Array.from(new Set(rawData.map(d => d[input])));
+            const allDates = Array.from(nested.keys()).sort(d3.ascending);
+
+            const data = allDates.map(date => {
+                const categories = nested.get(date);
+                const obj = { date };
+                allCategories.forEach(cat => {
+                    obj[cat] = categories?.get(cat) || 0;
+                });
+                return obj;
+            });
+
+            const stack = d3.stack().keys(allCategories);
+            const series = stack(data);
+
+        // Step 5: Scales
+        const x = d3.scaleBand()
+        .domain(data.map(d => d.date))
+        .range([0, width])
+        .padding(0.1);
+
+        const y = d3.scaleLinear()
+        .domain([0, d3.max(series, s => d3.max(s, d => d[1]))])
+        .nice()
+        .range([height, 0]);
+
+        const color = d3.scaleOrdinal()
+        .domain(allCategories)
+        .range(d3.schemeCategory10);
+
+        // Step 6: Draw bars
+        svg.selectAll("g.layer")
+        .data(series)
+        .join("g")
+            .attr("fill", d => color(d.key))
+        .selectAll("rect")
+        .data(d => d)
+        .join("rect")
+            .attr("x", d => x(d.data.date))
+            .attr("y", d => y(d[1]))
+            .attr("height", d => y(d[0]) - y(d[1]))
+            .attr("width", x.bandwidth());
+
+        // Step 7: Axes
+        svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
+        .selectAll("text")
+            .attr("transform", "rotate(-40)")
+            .style("text-anchor", "end");
+
+        svg.append("g")
+        .call(d3.axisLeft(y));
+
+        // text label for x axis
+        svg.append("text")
+            .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 3) + ")")
+            .style("text-anchor", "middle")
+            .text("Time");
+
+        // text label for y axis
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0 - margin.left)
+            .attr("x", 0 - (height / 2))
+            .attr("dy", "1em")
+            .style("text-anchor", "middle")
+            .text("Frequency");
+
+        // text label for plot
+        svg.append("text")
+            .attr("x", (width / 2))             
+            .attr("y", 0 - (margin.top / 2) + 2)
+            .attr("text-anchor", "middle")
+            .style("text-decoration", "underline")  
+            .text("Area Chart of " + input);
+
+        // legend for plot
+        const legend = svg.append("g").attr("transform", "translate(20, 20)");
+
+        const legendItems = legend.selectAll(".legend-item")
+            .data(color.domain())
+            .enter()
+            .append("g")
+            .attr("class", "legend-item")
+            .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
+        legendItems.append("rect")
+            .attr("width", 18)
+            .attr("height", 18)
+            .attr("fill", color);
+
+        legendItems.append("text")
+            .attr("x", 24)
+            .attr("y", 9)
+            .attr("dy", "0.35em")
+            .text(d => d);
+        }
+
+        if (data != null) {
+            draw(data)
+        } else {
+            // fetch csv data
+            d3.csv('http://localhost:3000/data').then(draw)
+        }
+    }
+    generateStackBarChart('Borough Name', null, 'month'); // default variable
+
 </script>
 
 </body>
