@@ -222,7 +222,7 @@
     const dropdownTimeGroupingValues = [
         'Year',
         'Month',
-        'Day',
+        'Day of Week',
         'Hour'
     ];
 
@@ -549,7 +549,7 @@ function generateAreaChart(data = null) {
         switch (timeGrouping) {
             case "Hour":
                 return "hour";
-            case "Day":
+            case "Day of Week":
                 return "day_of_week";
             case "Month":
                 return "month";
@@ -583,7 +583,7 @@ function generateAreaChart(data = null) {
             const nested = d3.rollup(
                 rawData,
                 v => v.length,
-                d => d[timeUnit],
+                d => +d[timeUnit],
                 d => d[input]
             );
             
@@ -633,7 +633,7 @@ function generateAreaChart(data = null) {
             // Step 7: Axes
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y-%m-%d")))
+                .call(d3.axisBottom(x))
                 .selectAll("text");
 
             svg.append("g")

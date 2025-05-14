@@ -25,7 +25,7 @@ df = df.dropna()
 df['year'] = df['CMPLNT_FR_DT'].dt.year.astype(int)
 df['month'] = df['CMPLNT_FR_DT'].dt.month.astype(int)
 df['day'] = df['CMPLNT_FR_DT'].dt.day.astype(int)
-df['day_of_week'] = df['CMPLNT_FR_DT'].dt.day_name()
+df['day_of_week'] = df['CMPLNT_FR_DT'].dt.weekday
 df['hour'] = df['CMPLNT_FR_TM'].str[:2].astype(int)
 
 # Assign offense categories based on OFNS_DESC
