@@ -279,7 +279,7 @@
         const input = getCluster();
 
         // plot dimensions and margins
-        const margin = {top: 30, right: 20, bottom: 20, left: 60};
+        const margin = {top: 30, right: 20, bottom: 100, left: 60};
         const width = 640 - margin.left - margin.right;
         const height = 320 - margin.top - margin.bottom;
 
@@ -315,8 +315,10 @@
 
             svg.append("g")
                 .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x)) 
-                .selectAll("text");
+                .call(d3.axisBottom(x))
+                .selectAll("text")
+                    .attr("transform", "rotate(-45)")
+                    .style("text-anchor", "end");;
 
             // create y-axis
             const y = d3.scaleLinear()
@@ -633,8 +635,7 @@ function generateAreaChart(data = null) {
             // Step 7: Axes
             svg.append("g")
                 .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x))
-                .selectAll("text");
+                .call(d3.axisBottom(x));
 
             svg.append("g")
                 .call(d3.axisLeft(y));
