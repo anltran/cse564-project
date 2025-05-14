@@ -41,7 +41,7 @@ def assign_offense(row):
     if description in theft:
         return 'Theft'
     elif description in disorder or 'FRAUD' in description:
-        return 'Harrassment/Disorderly Conduct'
+        return 'Disorderly Conduct'
     elif description in violent:
         return 'Violent Crime'
     elif description in traffic:
