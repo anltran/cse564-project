@@ -12,8 +12,12 @@
     <h1>NYC Crime: 2021 to 2024</h1>
     <div class="header-dropdowns">
         <div class="dropdown-group">
-            <label for="dropdown">Clustering variable</label>
-            <select id="dropdown" oninput="dropdownEvent()"></select>
+            <label for="dropdown-cluster">Clustering variable</label>
+            <select id="dropdown-cluster" oninput="dropdownEvent()"></select>
+        </div>
+        <div class="dropdown-group">
+            <label for="dropdown-time-interval">Time series interval</label>
+            <select id="dropdown-time-interval" oninput="dropdownEvent()"></select>
         </div>
         <button onclick="resetEvent()">Reset All</button>
     </div>
@@ -31,26 +35,42 @@
 </div>
 
 <script>
+    function getCluster() {
+        const dropdownCluster = document.getElementById("dropdown-cluster");
+        return dropdownCluster.value;
+    }
+
+    function getTimeInterval() {
+        const dropdownTimeInterval = document.getElementById("dropdown-time-interval");
+        return dropdownTimeInterval.value;
+    }
+</script>
+
+<script>
     function resetEvent() {
         const map = document.getElementById("map");
         map.innerHTML = '';
         const bar = document.getElementById("bar");
         bar.innerHTML = '';
-        const dropdown = document.getElementById("dropdown");
-        dropdown.value = 'Borough Name';
+        const dropdownCluster = document.getElementById("dropdown-cluster");
+        dropdownCluster.value = 'Borough Name';
+        const dropdownTimeInterval = document.getElementById("dropdown-time-interval");
+        dropdownTimeInterval.value = 'Month';
         const area = document.getElementById("area");
         area.innerHTML = '';
 
         // generate new plots with default variable
-        generateMap('Borough Name');
-        generateBarChart('Borough Name');
-        generateAreaChart('Borough Name');
+        generateMap();
+        generateBarChart();
+        generateAreaChart();
     }
 </script>
 
 <script>
 
-    function generateMap(input, data = null) {
+    function generateMap(data = null) {
+        const input = getCluster();
+
         // plot dimensions and margins
         const margin = {top: 20, right: 10, bottom: 15, left: 0};
         const width = 640 - margin.left - margin.right;
@@ -140,10 +160,10 @@
                 }
                 const bar = document.getElementById("bar");
                 bar.innerHTML = '';
-                generateBarChart(input, selectedData); // Call the bar chart function with the selected data
+                generateBarChart(selectedData); // Call the bar chart function with the selected data
                 const area = document.getElementById("area");
                 area.innerHTML = '';
-                generateAreaChart(input, selectedData); // Call the area chart function with the selected data
+                generateAreaChart(selectedData); // Call the area chart function with the selected data
             }
 
             // A function that return TRUE or FALSE according if a dot is in the selection or not
@@ -166,32 +186,44 @@
         }
     }
 
-    generateMap('Borough Name'); // default variable
+    generateMap(); // default variable
 
 </script>
 
 <script>
-    const dropdown_variables = [
+    const dropdownClusterValues = [
         'Borough Name',
         'Level of Offense',
         'Offense Type',
         'Location'
     ];
 
+    const dropdownTimeIntervalValues = [
+        'Year',
+        'Month',
+        'Day'
+    ];
+
     // populate dropdown options
-    const dropdown = document.getElementById('dropdown');
-    dropdown_variables.forEach(element => {
+    const dropdownCluster = document.getElementById('dropdown-cluster');
+    dropdownClusterValues.forEach(element => {
         const option = document.createElement('option');
         option.value = element;
         option.text = element;
-        dropdown.appendChild(option);
+        dropdownCluster.appendChild(option);
     });
+    
+    const dropdownTimeInterval = document.getElementById('dropdown-time-interval');
+    dropdownTimeIntervalValues.forEach(element => {
+        const option = document.createElement('option');
+        option.value = element;
+        option.text = element;
+        dropdownTimeInterval.appendChild(option);
+    });
+    dropdownTimeInterval.value = 'Month';
 
     // dropdown event handler
     function dropdownEvent() {
-        const dropdown = document.getElementById("dropdown");
-        const input = dropdown.value;
-
         // clear plots
         const map = document.getElementById("map");
         map.innerHTML = '';
@@ -200,17 +232,18 @@
         const area = document.getElementById("area");
         area.innerHTML = '';
 
-        // generate new plots with selected variable
-        generateMap(input);
-        generateBarChart(input);
-        generateAreaChart(input);
+        // generate new plots with selected variables
+        generateMap();
+        generateBarChart();
+        generateAreaChart();
     }
-
 </script>
 
 <script>
 
-    function generateBarChart(input, data = null) {
+    function generateBarChart(data = null) {
+        const input = getCluster();
+
         // plot dimensions and margins
         const margin = {top: 30, right: 20, bottom: 120, left: 60};
         const width = 640 - margin.left - margin.right;
@@ -297,12 +330,12 @@
                     area.innerHTML = '';
 
                     if (variables.length == 0) {
-                        generateMap(input);
-                        generateAreaChart(input);
+                        generateMap();
+                        generateAreaChart();
                     }
                     else {
-                        generateMap(input, data.filter(d => variables.includes(d[input])));
-                        generateAreaChart(input, data.filter(d => variables.includes(d[input])));
+                        generateMap(data.filter(d => variables.includes(d[input])));
+                        generateAreaChart(data.filter(d => variables.includes(d[input])));
                     }
                 });
 
@@ -332,13 +365,16 @@
         }
     }
 
-    generateBarChart('Borough Name'); // default variable
+    generateBarChart(); // default variable
 
 </script>
 
 <script>
 
-function generateAreaChart(input, data = null) {
+function generateAreaChart(data = null) {
+    const input = getCluster();
+    const timeInterval = getTimeInterval();
+    
     // plot dimensions and margins
     const margin = {top: 20, right: 10, bottom: 40, left: 60};
     const width = 640 - margin.left - margin.right;
@@ -352,26 +388,42 @@ function generateAreaChart(input, data = null) {
         .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    function getRoundedDate(d) {
+        var date = d["Date"];
+        switch (timeInterval) {
+            case "Day":
+                return date;
+            case "Month":
+                return date.substring(0, 7) + "-01";
+            case "Year":
+                return date.substring(0, 4) + "-01-01";
+        }
+    }
+
     function draw(data) {
-        const formatYear = d3.timeFormat("%Y");
-
         const allCategories = Array.from(new Set(data.map(d => d[input])));
-        const allYears = Array.from(new Set(data.map(d => d.year))).sort();
+        const allDates = data.map(d => getRoundedDate(d)).sort();
+        var grouped = Object.fromEntries(allDates.map(date =>
+            [date, Object.fromEntries(allCategories.map(c => [c, 0]))]
+        ));
 
-        const grouped = allYears.map(year => {
-            const entries = data.filter(d => d.year === year);
-            const freq = Object.fromEntries(allCategories.map(c => [c, 0]));
-            entries.forEach(d => {
-                freq[d[input]]++;
-            });
-            return { year: d3.timeParse("%Y")(year), ...freq };
-        });
+        data.forEach(d => {
+            const date = getRoundedDate(d);
+            const category = d[input];
+            var freqs = grouped[date];
+            freqs[category] += 1;
+            grouped[date] = freqs;
+        })
+
+        var grouped = Object.keys(grouped).map(date =>
+            ({ date: new Date(date), ...grouped[date] })
+        );
 
         const stack = d3.stack().keys(allCategories);
         const series = stack(grouped);
 
         const x = d3.scaleTime()
-            .domain(d3.extent(grouped, d => d.year))
+            .domain(d3.extent(grouped, d => d.date))
             .range([0, width]);
 
         const y = d3.scaleLinear()
@@ -384,7 +436,7 @@ function generateAreaChart(input, data = null) {
             .range(d3.schemeCategory10);
         
         const area = d3.area()
-            .x(d => x(d.data.year))
+            .x(d => x(d.data.date))
             .y0(d => y(d[0]))
             .y1(d => y(d[1]));
 
@@ -455,7 +507,7 @@ function generateAreaChart(input, data = null) {
     }
 }
 
-generateAreaChart('Borough Name'); // default variable
+generateAreaChart(); // default variable
 
 </script>
 
