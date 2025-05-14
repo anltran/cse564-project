@@ -185,9 +185,6 @@
             d3.csv('http://localhost:3000/data').then(draw)
         }
     }
-
-    generateMap(); // default variable
-
 </script>
 
 <script>
@@ -364,9 +361,6 @@
             d3.csv('http://localhost:3000/data').then(draw)
         }
     }
-
-    generateBarChart(); // default variable
-
 </script>
 
 <script>
@@ -506,9 +500,11 @@ function generateAreaChart(data = null) {
         d3.csv('http://localhost:3000/data').then(draw);
     }
 }
+</script>
 
-generateAreaChart(); // default variable
-
+<script>
+    // Call resetEvent for the first time to initialize everything
+    resetEvent();
 </script>
 
 </body>
